@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Wan 3.0 首帧续接接缝</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* 剪辑台：每个用例一条「时间轴 + 同步监看墙」，接缝在时间轴上标出、可一键跳转 */
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --fg: #15181d;
+  --muted: #5d6573;
+  --line: #dde1e7;
+  --accent: #2f55d4;
+  --seg-a: #c9d4f6;
+  --seg-b: #e4e8f2;
+  --seam: #d6461e;
+  --good: #1d8a4e;
+  --warn: #a8700f;
+  --bad: #c23b1a;
+  --good-bg: #e3f3ea;
+  --warn-bg: #f7eedb;
+  --bad-bg: #f8e3dc;
+  --screen: #0e1013;
+  --f-display: "Barlow Condensed", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --f-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317; --panel: #1a1d23; --fg: #e8ebf0; --muted: #98a0ad; --line: #2c313a;
+    --accent: #7d9bff; --seg-a: #2d3b66; --seg-b: #252a35; --seam: #ff7a52;
+    --good: #5fd08f; --warn: #e6b155; --bad: #ff8a66;
+    --good-bg: #173325; --warn-bg: #3a2e14; --bad-bg: #3d1f16; --screen: #000;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317; --panel: #1a1d23; --fg: #e8ebf0; --muted: #98a0ad; --line: #2c313a;
+  --accent: #7d9bff; --seg-a: #2d3b66; --seg-b: #252a35; --seam: #ff7a52;
+  --good: #5fd08f; --warn: #e6b155; --bad: #ff8a66;
+  --good-bg: #173325; --warn-bg: #3a2e14; --bad-bg: #3d1f16; --screen: #000;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2 { font-family: var(--f-display); font-weight: 700; letter-spacing: .01em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 4.4vw, 44px); line-height: 1.05; }
+h2 { font-size: 26px; line-height: 1.1; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.lede { color: var(--muted); max-width: 70ch; margin: 8px 0 0; }
+
+/* 总览表 */
+.summary { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--f-mono); font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; }
+tr:last-child td { border-bottom: 0; }
+td a { color: var(--accent); text-decoration: none; font-weight: 600; }
+td a:hover { text-decoration: underline; }
+.chip { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.chip.good { color: var(--good); background: var(--good-bg); }
+.chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); }
+.chip.kind { color: var(--muted); border: 1px solid var(--line); font-weight: 500; }
+
+.findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.finding { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.finding b { display: block; font-size: 15px; margin-bottom: 4px; }
+.finding p { margin: 0; color: var(--muted); }
+
+/* 用例 */
+.case { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 14px; scroll-margin-top: 16px; }
+.case-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; }
+.case-head .id { font-family: var(--f-mono); color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 13px; }
+.meta span b { color: var(--fg); font-weight: 600; }
+.notes { margin: 0; padding-left: 18px; display: grid; gap: 4px; max-width: 95ch; }
+.notes .t { font-family: var(--f-mono); color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; font-size: 13px; }
+.notes .t:hover { text-decoration: underline; }
+
+.timeline { position: relative; height: 34px; border-radius: 6px; overflow: hidden; background: var(--seg-b); cursor: pointer; }
+.timeline .seg { position: absolute; top: 0; bottom: 12px; }
+.timeline .seg:nth-child(odd) { background: var(--seg-a); }
+.timeline .seg:nth-child(even) { background: var(--seg-b); }
+.timeline .seg span { position: absolute; left: 6px; top: 3px; font-family: var(--f-mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.timeline .ovl { position: absolute; top: 0; bottom: 12px; background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--seam) 35%, transparent) 4px 6px); }
+.timeline .cut { position: absolute; bottom: 0; width: 1px; height: 12px; background: var(--muted); opacity: .55; }
+.timeline .seam { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--seam); }
+.timeline .head { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--fg); pointer-events: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 14px; height: 10px; margin-right: 5px; vertical-align: -1px; border-radius: 2px; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+button.ctl { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+button.ctl:hover { border-color: var(--accent); }
+button.ctl:focus-visible, .notes .t:focus-visible, .timeline:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.ctl.primary { background: var(--accent); border-color: var(--accent); color: #fff; min-width: 76px; }
+button.ctl.on { border-color: var(--accent); color: var(--accent); }
+button.ctl.seamjump { border-color: color-mix(in srgb, var(--seam) 50%, var(--line)); }
+.tc { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); margin-left: auto; }
+
+.wall { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.mon { min-width: 0; display: grid; gap: 6px; }
+.mon video { width: 100%; aspect-ratio: 16 / 10; background: var(--screen); border-radius: 6px; object-fit: contain; display: block; }
+.mon .lbl { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.mon .lbl b { font-weight: 600; }
+.mon .lbl small { color: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+.mon.lite video { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.refs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.refs span { font-size: 12px; color: var(--muted); margin-right: 4px; }
+.refs figure { margin: 0; display: grid; gap: 2px; justify-items: center; }
+.refs img { height: 64px; width: auto; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); }
+.refs figcaption { font-family: var(--f-mono); font-size: 10px; color: var(--muted); }
+
+  .seamframes { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+  .seamframes figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+  .seamframes img { width: 100%; border-radius: 6px; border: 1px solid var(--line); background: var(--screen); }
+  .seamframes figcaption { font-size: 12px; color: var(--muted); }
+  .seamframes figure:nth-child(3) img, .seamframes figure:nth-child(4) img { outline: 2px solid var(--seam); outline-offset: -2px; }
+footer { color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+@media (max-width: 560px) { .case { padding: 14px; } .tc { margin-left: 0; width: 100%; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Recast Lite · Wan 3.0 首帧图续接 · 正式站 · 2026-10-26</div>
+    <h1>Wan 3.0 首帧续接接缝</h1>
+    <p class="lede">工作流：原片切 0–15s / 15s–结尾两段；第 1 段 = 原片段 + 替换图；第 2 段 = 原片段 + 替换图 + 第 1 段最后一帧（当首帧图，prompt 要求首帧一致、纠正漏换），两段直接硬接、合回原音轨。下面三组同步播放「原片 / 成片」，红线是 15s 接缝，点「接缝」跳到前 1 秒，配合 0.25× 看衔接；每组下方并排放接缝两侧 4 帧。</p>
+  </header>
+
+  <section class="summary" aria-label="结果总览">
+    <table>
+      <thead><tr><th>用例</th><th>内容</th><th>时长</th><th>接缝类型</th><th>接缝</th><th>替换效果</th><th>结论</th></tr></thead>
+      <tbody id="sumBody"></tbody>
+    </table>
+  </section>
+
+  <section class="findings" aria-label="结论">
+    <div class="finding"><b>#236 舞台：接缝看不出</b><p>人物和替换后的场景（灯塔、旗帜、湿跑道）跨接缝完全一致；从第 1 段起按同一规则生成，场景不再跳。</p></div>
+    <div class="finding"><b>Squad Storm：镜头跳一下</b><p>人物分配一致，但第 1 段节奏跑快，14s 已拍到片尾的砖楼大远景；第 2 段按原片 15s 的近景重新开始，没跟首帧图走。</p></div>
+    <div class="finding"><b>#207 车内：切点贴着硬切</b><p>15s 切点紧挨原片 14.9s 的硬切；首帧图是后排头巾狗，第 2 段开头的前排主唱特写被换成了头巾狗；全片另有多处漏换真人。</p></div>
+    <div class="finding"><b>v4（末 2s 视频 + 首帧图）</b><p>#236 两个接缝都看不出；Squad Storm 第 2 段仍没接住第 1 段结尾（第 1 段本身跑偏，原片参考和 AI 结尾冲突时模型跟原片走）；#207 接缝顺了，但漏换真人的问题还在。首帧图帮不了第 1 段已经偏离原片的情况。</p></div>
+    <div class="finding"><b>接缝处理要补两条</b><p>① 切点离硬切 ≥0.5s、放在连续镜头中间；② 第 1 段自检：人物是否换对 + 结尾帧与原片同一时刻的构图是否一致，不过就重跑第 1 段。</p></div>
+  </section>
+
+  <div id="cases" class="wrap" style="gap:22px"></div>
+
+  <footer>
+    <div>积分（正式站实扣）：#155 180 · #207 180 · #236 168；Wan 3.0 720p 6 积分/秒，只算输出时长。视频为便于对比压到 540p。</div>
+    <div>全部输入 / 输出 / prompt：~/Desktop/Squad Storm/（Squad Storm）；脚本与产物：~/Desktop/pollo/工具/recast本地仿真/lite测试/chain207/&lt;编号&gt;_wan-v3-0_firstframe_full/</div>
+  </footer>
+</div>
+
+<script>
+const DATA = {"155": {"total": 29.53, "cuts": [], "segs": [[0, 15.0], [15.0, 29.53]], "overlap": 0, "seams": [15.0, 26.0], "imgs": 2}, "207": {"total": 30.0, "cuts": [1.17, 2.4, 3.67, 5.17, 7.3, 8.47, 9.57, 10.83, 11.83, 14.03, 14.5, 14.9, 17.3, 18.27, 19.1, 19.5, 19.97, 20.67, 21.4, 22.47, 23.97, 25.6, 26.17, 26.6, 26.97, 27.57, 28.83, 29.67], "segs": [[0, 15.0], [15.0, 30.0]], "overlap": 0, "seams": [15.0, 26.0], "imgs": 4}, "236": {"total": 27.04, "cuts": [], "segs": [[0, 15.0], [15.0, 27.04]], "overlap": 0, "seams": [15.0, 26.0], "imgs": 2}};
+const CASES = [
+  { id: '236', title: 'Stage Walk In', what: '后台走上舞台一镜到底，换人物 + 换场景', kind: '一镜到底 · 2 段', verdict: ['good', '接缝看不出'],
+    seamNote: ['good', '连贯'], swap: '人物、场景跨接缝一致',
+    notes: [[14.0, 'v4（第 2 段 = 第 1 段末 2s 视频 + 首帧图 + 原片 13–26s；第 3 段同理，2s 重叠渐变）：两个接缝（13–15s、24–26s）人物、场景都连贯，和「只用首帧图」一样好'], [15.0, '首帧图版：15s 接缝前后翅膀角色动作、服装连贯；远景灯塔、旗帜两段都有，场景不跳'], [null, '第 2 段首帧图 = 第 1 段最后一帧（@image3）；场景图 @image1、人物图 @image2']],
+    tracks: [['src', '原片'], ['v4', 'v4 · 末 2s 视频 + 首帧图 + 原片前带 2s', 'lite'], ['ff', '只用首帧图（上一版）', 'lite']] },
+  { id: '155', title: 'Squad Storm', what: '校服群像 MV 一镜到底，女生 + 面具男', kind: '一镜到底 · 2 段', verdict: ['warn', '镜头跳一下'],
+    seamNote: ['warn', '景别跳变'], swap: '人物分配一致',
+    notes: [[14.2, 'v4：第 2 段没有复现第 1 段末尾的砖楼大远景，直接按原片 13s 的成排学生近景开拍；2s 渐变把跳变变成了叠化，但景别仍然变了；15–16s 女生和面具男短暂消失'], [26.6, 'v4：24–26s 第二个接缝人群跳跃画面连贯，面具男在'], [9.0, '第 1 段节奏跑快：原片 8–11s 还是成排学生，生成结果已拍到片尾砖楼'], [15.0, '15s 接缝：第 1 段结尾是砖楼大远景，第 2 段按原片 15s 的近景重新开始，没跟首帧图走 → 景别跳变'], [null, '女生（黑衣）和面具男（白衬衫）两段一致；全部素材在桌面 Squad Storm 文件夹']],
+    tracks: [['src', '原片'], ['v4', 'v4 · 末 2s 视频 + 首帧图 + 原片前带 2s', 'lite'], ['ff', '只用首帧图（上一版）', 'lite']] },
+  { id: '207', title: 'Four Man Car Ride', what: '车内四人跟唱，换四只狗', kind: '多镜头 · 2 段', verdict: ['bad', '切点撞硬切'],
+    seamNote: ['bad', '角色串位'], swap: '多处漏换真人',
+    notes: [[15.8, 'v4：第 2 段前 2s 跟着第 1 段末尾续上了，但 15.8s、23.8s 司机仍是白外套真人；第 2 段有几处镜头和原片对不上'], [26.0, 'v4：24–26s 第二个接缝衔接自然，前排假发狗'], [15.0, '首帧图版：15s 切点紧挨原片 14.9s 硬切：首帧图是后排头巾狗，第 2 段开头的前排主唱特写被换成头巾狗'], [3.0, '2–5s 后排紫衬衫男仍是真人'], [24.0, '18s、24–27s 司机（白外套）、紫衬衫男仍是真人']],
+    tracks: [['src', '原片'], ['v4', 'v4 · 末 2s 视频 + 首帧图 + 原片前带 2s', 'lite'], ['ff', '只用首帧图（上一版）', 'lite']] },
+];
+
+const fmt = (t) => {
+  t = Math.max(0, t || 0);
+  const m = Math.floor(t / 60), s = Math.floor(t % 60), f = Math.floor((t % 1) * 30);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(f).padStart(2, '0')}`;
+};
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else n.setAttribute(k, v);
+  }
+  for (const k of kids) if (k != null) n.append(k);
+  return n;
+};
+const chip = ([kind, text]) => el('span', { class: `chip ${kind}`, text });
+
+const sumBody = document.getElementById('sumBody');
+const host = document.getElementById('cases');
+
+for (const c of CASES) {
+  const d = DATA[c.id];
+  sumBody.append(el('tr', {},
+    el('td', {}, el('a', { href: `#c${c.id}`, text: `#${c.id}` })),
+    el('td', {}, `${c.title} · ${c.what}`),
+    el('td', { class: 'mono', text: `${d.total.toFixed(2)}s` }),
+    el('td', {}, el('span', { class: 'chip kind', text: c.kind })),
+    el('td', {}, chip(c.seamNote)),
+    el('td', { text: c.swap }),
+    el('td', {}, chip(c.verdict)),
+  ));
+
+  const sec = el('section', { class: 'case', id: `c${c.id}` });
+  sec.append(el('div', { class: 'case-head' },
+    el('h2', { text: c.title }), el('span', { class: 'id', text: `#${c.id}` }), chip(c.verdict), el('span', { class: 'chip kind', text: c.kind })));
+  sec.append(el('div', { class: 'meta' },
+    el('span', {}, '时长 ', el('b', { class: 'mono', text: `${d.total.toFixed(2)}s` })),
+    el('span', {}, '原片镜头 ', el('b', { text: String(d.cuts.length + 1) })),
+    el('span', {}, '分段 ', el('b', { class: 'mono', text: d.segs.map(([a, b]) => `${a.toFixed(2)}–${b.toFixed(2)}`).join(' / ') })),
+    d.overlap ? el('span', {}, '重叠 ', el('b', { text: `每侧 ${d.overlap}s，smoothstep 渐变` })) : null,
+    el('span', {}, c.what)));
+
+  // 时间轴
+  const tl = el('div', { class: 'timeline', role: 'slider', tabindex: '0', 'aria-label': '时间轴，点击跳转', 'aria-valuemin': '0', 'aria-valuemax': String(d.total) });
+  const pct = (t) => `${(t / d.total) * 100}%`;
+  d.segs.forEach(([a, b], i) => {
+    const s = el('div', { class: 'seg' }, el('span', { text: `段${i + 1}` }));
+    s.style.left = pct(a); s.style.width = pct(b - a);
+    tl.append(s);
+  });
+  if (d.overlap) d.seams.forEach((t) => { const o = el('div', { class: 'ovl' }); o.style.left = pct(t - d.overlap); o.style.width = pct(2 * d.overlap); tl.append(o); });
+  d.cuts.forEach((t) => { const k = el('div', { class: 'cut' }); k.style.left = pct(t); tl.append(k); });
+  d.seams.forEach((t) => { const k = el('div', { class: 'seam', title: `接缝 ${fmt(t)}` }); k.style.left = pct(t); tl.append(k); });
+  const head = el('div', { class: 'head' }); tl.append(head);
+  sec.append(tl);
+  sec.append(el('div', { class: 'legend' },
+    el('span', {}, el('i', { style: 'background:var(--seg-a)' }), '分段'),
+    el('span', {}, el('i', { style: 'background:var(--seam)' }), '接缝'),
+    d.overlap ? el('span', {}, el('i', { style: 'background:repeating-linear-gradient(135deg,transparent 0 3px,var(--seam) 3px 5px)' }), '重叠渐变区') : null,
+    el('span', {}, el('i', { style: 'background:var(--muted);width:2px' }), '原片镜头切换')));
+
+  // 控制条
+  const play = el('button', { class: 'ctl primary', type: 'button', text: '▶ 播放' });
+  const ctr = el('div', { class: 'controls' }, play);
+  const seamBtns = d.seams.map((t, i) => el('button', { class: 'ctl seamjump', type: 'button', text: `接缝${d.seams.length > 1 ? i + 1 : ''} ${fmt(t)}` }));
+  seamBtns.forEach((b) => ctr.append(b));
+  const rates = [1, 0.5, 0.25].map((r) => el('button', { class: `ctl${r === 1 ? ' on' : ''}`, type: 'button', text: `${r}×` }));
+  rates.forEach((b) => ctr.append(b));
+  const sound = el('button', { class: 'ctl', type: 'button', text: '🔇 成片声音' });
+  ctr.append(sound);
+  const tc = el('span', { class: 'tc', text: `${fmt(0)} / ${fmt(d.total)}` });
+  ctr.append(tc);
+  sec.append(ctr);
+
+  // 监看墙
+  const wall = el('div', { class: 'wall' });
+  const vids = c.tracks.map(([key, label, cls]) => {
+    const v = el('video', { src: `v/${c.id}_${key}.mp4`, preload: 'auto', playsinline: '', muted: '' });
+    v.muted = true;
+    wall.append(el('div', { class: `mon ${cls || ''}` }, v, el('div', { class: 'lbl' }, el('b', { text: label }), el('small', { text: key === 'src' ? '参考视频' : '' }))));
+    return { key, v, cls };
+  });
+  sec.append(wall);
+
+  // 备注
+  const ul = el('ul', { class: 'notes' });
+  for (const [t, text] of c.notes) {
+    const li = el('li');
+    if (t != null) { const b = el('button', { class: 't', type: 'button', text: fmt(t) }); b.addEventListener('click', () => seek(Math.max(0, t - 1), true)); li.append(b, ' '); }
+    li.append(text);
+    ul.append(li);
+  }
+  sec.append(ul);
+
+  // 参考图
+  const refs = el('div', { class: 'refs' }, el('span', { text: '替换图' }));
+  for (let i = 1; i <= d.imgs; i++) refs.append(el('figure', {}, el('img', { src: `i/${c.id}_${i}.jpg`, alt: `@image${i}`, loading: 'lazy' }), el('figcaption', { text: `@image${i}` })));
+  sec.append(refs);
+  const fr = el('div', { class: 'seamframes' });
+  [['a', '原片 14.95s'], ['b', '原片 15.05s'], ['c', '第 1 段最后一帧（首帧图）'], ['d', '第 2 段第一帧']].forEach(([k, cap]) =>
+    fr.append(el('figure', {}, el('img', { src: `i/${c.id}_${k}.jpg`, alt: cap, loading: 'lazy' }), el('figcaption', { text: cap }))));
+  sec.insertBefore(fr, ul);
+  host.append(sec);
+
+  // 同步播放：以原片为主时钟，其余每帧对齐
+  const master = vids[0].v;
+  let raf = 0;
+  const all = () => vids.map((x) => x.v);
+  function tick() {
+    const t = master.currentTime;
+    for (const x of vids.slice(1)) if (Math.abs(x.v.currentTime - t) > 0.12 && !x.v.seeking && t < x.v.duration) x.v.currentTime = t;
+    head.style.left = pct(Math.min(t, d.total));
+    tc.textContent = `${fmt(t)} / ${fmt(d.total)}`;
+    if (!master.paused) raf = requestAnimationFrame(tick);
+  }
+  function seek(t, andPlay) {
+    all().forEach((v) => { v.currentTime = Math.min(t, (v.duration || d.total) - 0.05); });
+    tick();
+    if (andPlay) start();
+  }
+  function start() { all().forEach((v) => v.play().catch(() => {})); play.textContent = '❚❚ 暂停'; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); }
+  function stop() { all().forEach((v) => v.pause()); play.textContent = '▶ 播放'; tick(); }
+  play.addEventListener('click', () => (master.paused ? start() : stop()));
+  master.addEventListener('ended', stop);
+  seamBtns.forEach((b, i) => b.addEventListener('click', () => seek(Math.max(0, d.seams[i] - 1), true)));
+  rates.forEach((b, i) => b.addEventListener('click', () => {
+    const r = [1, 0.5, 0.25][i];
+    all().forEach((v) => { v.playbackRate = r; });
+    rates.forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  sound.addEventListener('click', () => {
+    const lite = vids.find((x) => x.key === 'ff').v;
+    lite.muted = !lite.muted;
+    sound.textContent = lite.muted ? '🔇 成片声音' : '🔊 成片声音';
+    sound.classList.toggle('on', !lite.muted);
+  });
+  const fromEvent = (e) => { const r = tl.getBoundingClientRect(); return ((e.clientX - r.left) / r.width) * d.total; };
+  tl.addEventListener('click', (e) => seek(fromEvent(e), !master.paused));
+  tl.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') { seek(master.currentTime + 1 / 30, false); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { seek(master.currentTime - 1 / 30, false); e.preventDefault(); }
+    if (e.key === ' ') { master.paused ? start() : stop(); e.preventDefault(); }
+  });
+}
+</script>
+
+</body>
+</html>
